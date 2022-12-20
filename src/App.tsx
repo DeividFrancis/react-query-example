@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueries, useQuery } from "react-query";
 
 import "./App.css";
 import { Header } from "./Header";
@@ -11,55 +12,38 @@ interface IRepo {
 }
 
 function App() {
-  const [repos, setRepos] = useState<IRepo[]>();
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>();
-
-  useEffect(() => {
-    fetchReposInit();
-  }, []);
-
-  async function fetchReposInit() {
-    try {
-      setErrorMessage(undefined);
-      setLoading(true);
-      const reposResponse = await fetchReposApi();
-      setRepos(reposResponse);
-    } catch (error) {
-      console.log("Error");
-      setRepos(undefined);
-      setErrorMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { isLoading, data, error } = useQuery("repos", fetchReposApi);
 
   async function fetchReposApi() {
     await delay(2000); // Simular uma requisição lenta;
     const res = await fetch("https://api.github.com/users/deividfrancis/repos");
     if (!res.ok) {
-      throw await res.json();
+      throw await res.text();
     }
     const json = await res.json();
-    return json;
+    return json as IRepo[];
   }
   return (
     <div className="App">
       <Header />
       <div>
-        {errorMessage && <strong className="error">{errorMessage}</strong>}
-        {loading && <p>Loading...</p>}
+        <>
+          {error && <strong className="error">{JSON.stringify(error)}</strong>}
+          {isLoading && <p>Loading...</p>}
 
-        {repos && (
-          <ul className="card-list">
-            {repos.map((repo) => (
-              <li key={repo.id} className="card">
-                <h3 className="card-title">{repo.name}</h3>
-                <strong className="card-description">{repo.description}</strong>
-              </li>
-            ))}
-          </ul>
-        )}
+          {data && (
+            <ul className="card-list">
+              {data.map((repo) => (
+                <li key={repo.id} className="card">
+                  <h3 className="card-title">{repo.name}</h3>
+                  <strong className="card-description">
+                    {repo.description}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       </div>
       <p className="read-the-docs">
         Click on the ReactQuery and React logos to learn more
